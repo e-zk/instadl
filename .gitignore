@@ -1,0 +1,6 @@
+# downloaded posts
+static/posts/**
+
+# bin names
+instadl
+instadler
