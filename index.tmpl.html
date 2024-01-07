@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta content="width=device-width,initial-scale=1" name="viewport">
+	<meta content="#101010" name="theme-color">
+	<link href="/style.css" rel="stylesheet" type="text/css">
+	<title>instadl</title>
+</head>
+<body>
+	<h1>instadl ~</h1>
+	<p>input post urls or IDs in the box below and hit submit.</p>
+	<form action="/getpost" method="post">
+		<textarea name="postlink"></textarea><br>
+		<input type="submit" value="Submit">
+	</form>
+	{{ if .Results }}
+	<hr>
+	<p>All Ids: <code>{{.Ids}}</code></p>
+	<form action="/getzip">
+		<input type="hidden" name="ids" value="{{.Ids}}">
+		<input type="submit" value="Download all">
+	</form>
+	<div class="results">
+		{{ range $r := .Results }}
+			{{ range $r.Media }}
+			<a href="{{.ContentUrl}}">
+			<div class="result">
+				<div class="infobox">
+					{{$r.Author}}<br>{{ $r.Id }}
+				</div>
+				<img src="{{ .ContentUrl }}">
+			</div>
+			</a>
+			{{end}}
+		{{ end }}
+	</div>
+	{{ end }}
+</body>
+</html>
