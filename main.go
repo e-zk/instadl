@@ -2,15 +2,12 @@ package main
 
 import (
 	"archive/zip"
-	"errors"
 	"html/template"
 	"io"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -48,32 +45,6 @@ func isIn(str string, check []string) bool {
 	return false
 }
 
-// construct args for instaloader
-func constructArgs(postId, outPath string) []string {
-	return []string{"--dirname-pattern=" + outPath, "--filename-pattern={profile}-{shortcode}", "--no-metadata-json", "--", "-" + postId}
-}
-
-// download post via id and then return the path to where its downloaded
-func execInstaLoader(postId string) string {
-	p := path.Join(dlPath, postId)
-	err := os.Mkdir(p, 0750)
-	if errors.Is(err, os.ErrExist) {
-		log.Println("skipping... already downloaded")
-		return p
-	} else if err != nil {
-		log.Fatal(err)
-	}
-
-	args := constructArgs(postId, p)
-
-	cmd := exec.Command("instaloader", args...)
-	if err := cmd.Run(); err != nil {
-		log.Fatal(err)
-	}
-
-	return p
-}
-
 func dirToPost(dir string) Post {
 	var media []PostMedia
 	var p Post
@@ -88,7 +59,7 @@ func dirToPost(dir string) Post {
 		// TODO more content types
 		if filepath.Ext(fpath) == ".jpg" {
 			relpath, _ := strings.CutPrefix(fpath, dlPath)
-			relpath = path.Join("/download", filepath.Base(dir), relpath)
+			relpath = filepath.Join("/download", filepath.Base(dir), relpath)
 
 			m := PostMedia{
 				Type:       "image",
@@ -203,7 +174,7 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 
 		if isIn(filepath.Base(fpath), ids) {
 			log.Printf("zip\t=> %s", fpath)
-			files = append(files, path.Join(dlPath, fpath))
+			files = append(files, filepath.Join(dlPath, fpath))
 		}
 
 		return nil
