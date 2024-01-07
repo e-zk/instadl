@@ -2,11 +2,10 @@ package main
 
 import (
 	"archive/zip"
-	"io"
-
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -30,7 +29,6 @@ func constructArgs(postId, outPath string) []string {
 
 type PostMedia struct {
 	Type       string // image/video/text?
-	LocalPath  string // path on disk
 	ContentUrl string // the relative url for the server
 }
 
