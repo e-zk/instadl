@@ -81,7 +81,7 @@ func handleCss(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, cssPath)
 }
 
-// download id and then return path where  its downloaded
+// download post via id and then return the path to where its downloaded
 func execInstaLoader(postId string) string {
 	p := path.Join(dlPath, postId)
 	err := os.Mkdir(p, 0750)
@@ -110,7 +110,7 @@ func dirToPost(dir string) Post {
 	rfs := os.DirFS(dir)
 	fs.WalkDir(rfs, ".", func(fpath string, d fs.DirEntry, err error) error {
 		if err != nil {
-			log.Fatalf("walk\t!=> %v", err)
+			log.Fatalf("d2p\t!=> walk: %v", err)
 		}
 
 		// TODO more content types
@@ -125,6 +125,7 @@ func dirToPost(dir string) Post {
 			media = append(media, m)
 			author = strings.Split(filepath.Base(relpath), "-")[0]
 		}
+
 		return nil
 	})
 
@@ -137,14 +138,14 @@ func dirToPost(dir string) Post {
 func handleGetPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		links := r.PostFormValue("postlink")
-		log.Printf("submitted\t=> %v", links)
+		log.Printf("getpost\t=> submitted: %v", links)
 
 		var outputIds []string
 
 		for _, link := range strings.Split(strings.Replace(strings.Replace(links, "\n", ",", -1), "\r", "", -1), ",") {
 
 			postId := link
-			log.Printf("got\t=> %s", link)
+			log.Printf("getpost\t=> got '%s'", link)
 
 			// TODO do something cooler here
 			if strings.HasPrefix(link, "http") {
@@ -158,10 +159,9 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("\t\t=> %s", postId)
 
-			// wait and then redirect
-			//fmt.Fprintf(w, "downloading...\n")
+			// download files via instaloader script
 			outputPath := execInstaLoader(postId)
-			log.Printf("downloaded\t=>%s", outputPath)
+			log.Printf("getpost\t=> downloaded '%s'", outputPath)
 
 			outputIds = append(outputIds, postId)
 		}
@@ -173,6 +173,7 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// check string is in []string
 func isIn(str string, check []string) bool {
 	for _, x := range check {
 		if str == x {
@@ -183,8 +184,7 @@ func isIn(str string, check []string) bool {
 }
 
 func handleZipPost(w http.ResponseWriter, r *http.Request) {
-	log.Printf("zip\t=> got")
-
+	// get Ids from form
 	idsParam := r.FormValue("ids")
 	if idsParam == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -192,10 +192,8 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 	}
 	ids := strings.Split(idsParam, ",")
 
-	log.Printf("zip\t=> %s", idsParam)
-
+	// get list of paths that need to be included in zip based on the Ids we have
 	var files []string
-
 	rfs := os.DirFS(dlPath)
 	fs.WalkDir(rfs, ".", func(fpath string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -214,25 +212,22 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
+	// create archive + zip writer
 	archive, err := os.CreateTemp(dlPath, "*.zip")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer archive.Close()
-
 	zw := zip.NewWriter(archive)
 
+	// add each file to the zip
 	for _, f := range files {
-
-		log.Printf("zip\t=> created %s in zip", f)
 		pfs := os.DirFS(f)
 		fs.WalkDir(pfs, ".", func(fpath string, d fs.DirEntry, err error) error {
 			if fpath == "." {
 				return nil
 			}
 
-			log.Printf("zip\t=> >%s", fpath)
-
+			log.Printf("zip\t=> adding '%s' to archive", fpath)
 			w, err := zw.Create(filepath.Join(filepath.Base(f), fpath))
 			if err != nil {
 				log.Fatal(err)
@@ -254,10 +249,9 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// close writer + archive file before redirecting client to download the file
 	zw.Close()
 	archive.Close()
-
-	//log.Printf("zip\t=> %s", archive.Name())
 
 	http.Redirect(w, r, "/download/"+filepath.Base(archive.Name()), http.StatusSeeOther)
 }
@@ -271,6 +265,6 @@ func main() {
 	mux.HandleFunc("/getpost", handleGetPost)
 	mux.HandleFunc("/getzip", handleZipPost)
 
-	fmt.Printf("starting...\n")
+	log.Println("starting...")
 	http.ListenAndServe(":8585", mux)
 }
