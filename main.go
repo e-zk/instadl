@@ -20,7 +20,7 @@ import (
 // config
 var (
 	dlPath  = "./static/posts"
-	cssPath = "./style.css"
+	cssPath = "./static/style.css"
 )
 
 func constructArgs(postId, outPath string) []string {
