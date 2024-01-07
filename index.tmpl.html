@@ -9,14 +9,14 @@
 </head>
 <body>
 	<h1>instadl ~</h1>
-	<p>input post urls or IDs in the box below and hit submit.</p>
+	<p>input post urls or post IDs in the box below and hit submit.</p>
 	<form action="/getpost" method="post">
 		<textarea name="postlink"></textarea><br>
 		<input type="submit" value="Submit">
 	</form>
 	{{ if .Results }}
 	<hr>
-	<p>All Ids: <code>{{.Ids}}</code></p>
+	<p>IDs: <code>{{.Ids}}</code></p>
 	<form action="/getzip">
 		<input type="hidden" name="ids" value="{{.Ids}}">
 		<input type="submit" value="Download all">

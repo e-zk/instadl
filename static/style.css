@@ -8,11 +8,11 @@
 
 @media(prefers-color-scheme:dark) { 
 	:root {
-		--bg: #334;
-		--bg2: #0002;
-		--fg: #fffa;
+		--bg: #202124;
+		--bg2: #292a2d;
+		--fg: #fffb;
 		--fg2: #fff;
-		--bc: #556;
+		--bc: #353535;
 	}
 }
 
@@ -70,13 +70,17 @@ input[type="submit"]:hover {
 }
 
 .result {
-	background: var(--bg2);
 	aspect-ratio: 1 / 1;
-	overflow: hidden;
+
 	position: relative;
+	background: var(--bg2);
+	overflow: hidden;
 }
 .result img {
-	max-width: 100%;
+	/*max-width: 100%;*/
+	object-fit: cover;
+	width: 100%;
+	height: 100%;
 	filter: blur(0);
 	transition: all 0.2s ease;
 }
@@ -104,5 +108,5 @@ hr {
 	height: 0;
 	outline: none;
 	border: none;
-	border-top: 2px solid #ddd;
+	border-top: 2px solid var(--bc);
 }
