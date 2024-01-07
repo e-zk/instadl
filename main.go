@@ -3,7 +3,6 @@ package main
 import (
 	"archive/zip"
 	"errors"
-	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -23,10 +22,6 @@ var (
 	cssPath = "./static/style.css"
 )
 
-func constructArgs(postId, outPath string) []string {
-	return []string{"--dirname-pattern=" + outPath, "--filename-pattern={profile}-{shortcode}", "--no-metadata-json", "--", "-" + postId}
-}
-
 type PostMedia struct {
 	Type       string // image/video/text?
 	ContentUrl string // the relative url for the server
@@ -43,42 +38,19 @@ type Data struct {
 	Ids     string
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("index.tmpl.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// get DATA here
-	idsParam := r.FormValue("ids")
-	ids := strings.Split(idsParam, ",")
-	if idsParam != "" {
-		var posts []Post
-
-		for _, i := range ids {
-			posts = append(posts, dirToPost(filepath.Join(dlPath, i)))
+// check whether string is in []string
+func isIn(str string, check []string) bool {
+	for _, x := range check {
+		if str == x {
+			return true
 		}
-
-		data := Data{
-			Results: posts,
-			Ids:     idsParam,
-		}
-
-		err = t.Execute(w, data)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return
 	}
-
-	err = t.Execute(w, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	return false
 }
-func handleCss(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, cssPath)
+
+// construct args for instaloader
+func constructArgs(postId, outPath string) []string {
+	return []string{"--dirname-pattern=" + outPath, "--filename-pattern={profile}-{shortcode}", "--no-metadata-json", "--", "-" + postId}
 }
 
 // download post via id and then return the path to where its downloaded
@@ -135,29 +107,62 @@ func dirToPost(dir string) Post {
 	return p
 }
 
+func handleIndex(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("index.tmpl.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// get DATA here
+	idsParam := r.FormValue("ids")
+	ids := strings.Split(idsParam, ",")
+	if idsParam != "" {
+		var posts []Post
+
+		for _, i := range ids {
+			posts = append(posts, dirToPost(filepath.Join(dlPath, i)))
+		}
+
+		data := Data{
+			Results: posts,
+			Ids:     idsParam,
+		}
+
+		err = t.Execute(w, data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	err = t.Execute(w, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func handleGetPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		links := r.PostFormValue("postlink")
 		log.Printf("getpost\t=> submitted: %v", links)
 
 		var outputIds []string
-
 		for _, link := range strings.Split(strings.Replace(strings.Replace(links, "\n", ",", -1), "\r", "", -1), ",") {
-
-			postId := link
 			log.Printf("getpost\t=> got '%s'", link)
 
-			// TODO do something cooler here
+			// the link is the post's Id
+			// (not really, but we make sure it is below)
+			postId := link
+
+			// if the link is in fact, a link, we need to extract _just_ the Id part of it
 			if strings.HasPrefix(link, "http") {
 				link = strings.Replace(link, "/reel/", "/p/", -1)
 				r := regexp.MustCompile(".*/p/(.*)/.*")
 				m := r.FindAllStringSubmatch(link, -1)
-				log.Printf("matches\t=> %v", m)
-				// TODO use regexp match of id here
 				postId = m[0][1]
 			}
-
-			log.Printf("\t\t=> %s", postId)
+			log.Printf("getpost\t=> final post id: '%s'", postId)
 
 			// download files via instaloader script
 			outputPath := execInstaLoader(postId)
@@ -166,21 +171,13 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 			outputIds = append(outputIds, postId)
 		}
 
+		// go back to index w/ list of Ids in param
 		http.Redirect(w, r, "/?ids="+strings.Join(outputIds, ","), http.StatusSeeOther)
 		return
 	}
 
+	// go back to index
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-// check string is in []string
-func isIn(str string, check []string) bool {
-	for _, x := range check {
-		if str == x {
-			return true
-		}
-	}
-	return false
 }
 
 func handleZipPost(w http.ResponseWriter, r *http.Request) {
@@ -254,6 +251,10 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 	archive.Close()
 
 	http.Redirect(w, r, "/download/"+filepath.Base(archive.Name()), http.StatusSeeOther)
+}
+
+func handleCss(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, cssPath)
 }
 
 func main() {
