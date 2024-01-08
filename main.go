@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -20,14 +21,15 @@ var (
 )
 
 type PostMedia struct {
-	Type       string // image/video/text?
+	Type       string // image | video
 	ContentUrl string // the relative url for the server
 }
 
 type Post struct {
-	Id     string
-	Author string
-	Media  []PostMedia
+	Id          string
+	Author      string
+	Media       []PostMedia
+	Description string
 }
 
 // data passed to template
@@ -36,16 +38,7 @@ type Data struct {
 	Ids     string
 }
 
-// check whether string is in []string
-func isIn(str string, check []string) bool {
-	for _, x := range check {
-		if str == x {
-			return true
-		}
-	}
-	return false
-}
-
+// walk a directory, turn it into a post
 func dirToPost(dir string) Post {
 	var media []PostMedia
 	var p Post
@@ -58,6 +51,8 @@ func dirToPost(dir string) Post {
 		}
 
 		// TODO more content types
+		// TODO post description/text
+		// TODO use switch/case
 		if filepath.Ext(fpath) == ".jpg" {
 			relpath, _ := strings.CutPrefix(fpath, dlPath)
 			relpath = filepath.Join("/download", filepath.Base(dir), relpath)
@@ -87,10 +82,10 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	// get DATA here
 	idsParam := r.FormValue("ids")
-	ids := strings.Split(idsParam, ",")
 	if idsParam != "" {
-		var posts []Post
+		ids := strings.Split(idsParam, ",")
 
+		var posts []Post
 		for _, i := range ids {
 			posts = append(posts, dirToPost(filepath.Join(dlPath, i)))
 		}
@@ -116,29 +111,39 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleGetPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
+
+		// remove carriage returns + make csv
 		links := r.PostFormValue("postlink")
-		log.Printf("getpost\t=> submitted: %v", links)
+		links = strings.Replace(links, "\r", "", -1)
+		links = strings.Replace(links, "\n", ",", -1)
+		linkSlice := strings.Split(links, ",")
+
+		log.Printf("getpost\t=> submitted: %v", linkSlice)
 
 		var outputIds []string
-		for _, link := range strings.Split(strings.Replace(strings.Replace(links, "\n", ",", -1), "\r", "", -1), ",") {
-			log.Printf("getpost\t=> got %q", link)
+		for _, link := range linkSlice {
+			if link == "" {
+				continue
+			}
 
 			// the link is the post's Id
 			// (not really, but we make sure it is below)
 			postId := link
 
-			// if the link is in fact, a link, we need to extract _just_ the Id part of it
+			// if the link is in fact, a link, we need to normalise + extract the shortcode
 			if strings.HasPrefix(link, "http") {
 				link = strings.Replace(link, "/reel/", "/p/", -1)
 				r := regexp.MustCompile(".*/p/(.*)/.*")
 				m := r.FindAllStringSubmatch(link, -1)
 				postId = m[0][1]
 			}
-			log.Printf("getpost\t=> final post id: %q", postId)
 
 			// download files via instaloader script
-			outputPath := execInstaLoader(postId)
-			log.Printf("getpost\t=> downloaded %q", outputPath)
+			log.Printf("getpost\t=> downloading %q", postId)
+			_, err := execInstaLoader(postId)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			outputIds = append(outputIds, postId)
 		}
@@ -173,7 +178,7 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		if isIn(filepath.Base(fpath), ids) {
+		if slices.Contains(ids, filepath.Base(fpath)) {
 			log.Printf("zip\t=> %s", fpath)
 			files = append(files, filepath.Join(dlPath, fpath))
 		}
