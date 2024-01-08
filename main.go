@@ -30,6 +30,7 @@ type Post struct {
 	Media  []PostMedia
 }
 
+// data passed to template
 type Data struct {
 	Results []Post
 	Ids     string
