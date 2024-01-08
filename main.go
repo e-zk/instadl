@@ -121,7 +121,7 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 
 		var outputIds []string
 		for _, link := range strings.Split(strings.Replace(strings.Replace(links, "\n", ",", -1), "\r", "", -1), ",") {
-			log.Printf("getpost\t=> got '%s'", link)
+			log.Printf("getpost\t=> got %q", link)
 
 			// the link is the post's Id
 			// (not really, but we make sure it is below)
@@ -134,11 +134,11 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 				m := r.FindAllStringSubmatch(link, -1)
 				postId = m[0][1]
 			}
-			log.Printf("getpost\t=> final post id: '%s'", postId)
+			log.Printf("getpost\t=> final post id: %q", postId)
 
 			// download files via instaloader script
 			outputPath := execInstaLoader(postId)
-			log.Printf("getpost\t=> downloaded '%s'", outputPath)
+			log.Printf("getpost\t=> downloaded %q", outputPath)
 
 			outputIds = append(outputIds, postId)
 		}
@@ -196,7 +196,7 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 				return nil
 			}
 
-			log.Printf("zip\t=> adding '%s' to archive", fpath)
+			log.Printf("zip\t=> adding %q to archive", fpath)
 			w, err := zw.Create(filepath.Join(filepath.Base(f), fpath))
 			if err != nil {
 				log.Fatal(err)
