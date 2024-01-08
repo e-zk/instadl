@@ -141,8 +141,12 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 			// download files via instaloader script
 			log.Printf("getpost\t=> downloading %q", postId)
 			_, err := execInstaLoader(postId)
-			if err != nil {
+			if err == ErrPostExists {
+				log.Printf("getpost\t=> %q: already downloaded", postId)
+			} else if err != nil {
 				log.Fatal(err)
+			} else {
+				log.Printf("getpost\t=> downloaded %q", postId)
 			}
 
 			outputIds = append(outputIds, postId)
