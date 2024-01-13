@@ -27,9 +27,13 @@
 			<a href="{{.ContentUrl}}">
 			<div class="result">
 				<div class="infobox">
-					{{$r.Author}}<br>{{ $r.Id }}
+					{{$r.Author}}<br>{{ $r.Description }}
 				</div>
+				{{ if eq .Type "video" }}
+				<img src="{{ .Thumb }}">
+				{{else}}
 				<img src="{{ .ContentUrl }}">
+				{{end}}
 			</div>
 			</a>
 			{{end}}
