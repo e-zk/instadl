@@ -11,6 +11,8 @@ Bulk download Instagram posts.
 - Minimal interface.
 - No JavaScript.
 - No database. Works entirely off filesystem.
+- No account/authentication required.
+- Only works for "public" posts.
 - Download multiple posts as `.zip`.
 
 Dependencies
