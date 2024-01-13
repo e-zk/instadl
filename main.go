@@ -23,6 +23,7 @@ var (
 type PostMedia struct {
 	Type       string // image | video
 	ContentUrl string // the relative url for the server
+	Thumb      string
 }
 
 type Post struct {
@@ -38,11 +39,17 @@ type Data struct {
 	Ids     string
 }
 
+func replaceExt(path, newExt string) string {
+	newPath, _ := strings.CutSuffix(path, filepath.Ext(path))
+	newPath = newPath + newExt
+	return newPath
+}
+
 // walk a directory, turn it into a post
 func dirToPost(dir string) Post {
 	var media []PostMedia
 	var p Post
-	var author string
+	var author, desc string
 
 	rfs := os.DirFS(dir)
 	fs.WalkDir(rfs, ".", func(fpath string, d fs.DirEntry, err error) error {
@@ -50,10 +57,8 @@ func dirToPost(dir string) Post {
 			log.Fatalf("d2p\t!=> walk: %v", err)
 		}
 
-		// TODO more content types
-		// TODO post description/text
-		// TODO use switch/case
-		if filepath.Ext(fpath) == ".jpg" {
+		switch filepath.Ext(fpath) {
+		case ".jpg":
 			relpath, _ := strings.CutPrefix(fpath, dlPath)
 			relpath = filepath.Join("/download", filepath.Base(dir), relpath)
 
@@ -62,7 +67,42 @@ func dirToPost(dir string) Post {
 				ContentUrl: relpath,
 			}
 			media = append(media, m)
-			author = strings.Split(filepath.Base(relpath), "-")[0]
+
+			// if author not set, set it
+			if author == "" {
+				author = strings.Split(filepath.Base(relpath), "-")[0]
+			}
+		case ".mp4":
+			relpath, _ := strings.CutPrefix(fpath, dlPath)
+			relpath = filepath.Join("/download", filepath.Base(dir), relpath)
+
+			var thumblink string
+			thumb := filepath.Join(dlPath, filepath.Base(dir), replaceExt(fpath, ".jpg"))
+			if _, err := os.Stat(thumb); err == nil {
+				thumblink = replaceExt(relpath, ".jpg")
+			}
+
+			m := PostMedia{
+				Type:       "video",
+				ContentUrl: relpath,
+				Thumb:      thumblink,
+			}
+			media = append(media, m)
+
+			// if author not set, set it
+			if author == "" {
+				author = strings.Split(filepath.Base(relpath), "-")[0]
+			}
+		case ".txt":
+			// set post description
+			descFile := filepath.Join(dlPath, filepath.Base(dir), fpath)
+			descB, err := os.ReadFile(descFile)
+			if err != nil {
+				log.Fatalf("d2p\t!=> %v", err)
+			}
+			desc = string(descB)
+		default:
+			// nothing
 		}
 
 		return nil
@@ -71,6 +111,7 @@ func dirToPost(dir string) Post {
 	p.Id = filepath.Base(dir)
 	p.Author = "@" + author
 	p.Media = media
+	p.Description = desc
 	return p
 }
 
@@ -111,7 +152,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func handleGetPost(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
-
 		// remove carriage returns + make csv
 		links := r.PostFormValue("postlink")
 		links = strings.Replace(links, "\r", "", -1)
@@ -162,7 +202,6 @@ func handleGetPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleZipPost(w http.ResponseWriter, r *http.Request) {
-	// get Ids from form
 	idsParam := r.FormValue("ids")
 	if idsParam == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
