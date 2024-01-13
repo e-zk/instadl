@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"html/template"
 	"io"
 	"io/fs"
@@ -12,12 +13,6 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-)
-
-// config
-var (
-	dlPath  = "./static/posts"
-	cssPath = "./static/style.css"
 )
 
 type PostMedia struct {
@@ -275,6 +270,25 @@ func handleZipPost(w http.ResponseWriter, r *http.Request) {
 
 func handleCss(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, cssPath)
+}
+
+var (
+	listenAddr string
+	staticDir  string
+	cssPath    string
+	dlPath     string
+)
+
+func init() {
+	flag.StringVar(&listenAddr, "l", ":8585", "listen address")
+	flag.StringVar(&staticDir, "d", "./static", "local path to where /static is. this is where posts are downloaded to.")
+	flag.StringVar(&cssPath, "s", "", "path to style.css. defaults to style.css in the directory specified by -d")
+	flag.Parse()
+
+	dlPath = filepath.Join(staticDir, "posts")
+	if cssPath == "" {
+		cssPath = filepath.Join(staticDir, "style.css")
+	}
 }
 
 func main() {
