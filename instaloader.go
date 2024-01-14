@@ -14,7 +14,7 @@ func constructArgs(postId, outPath string) []string {
 }
 
 // download post via id; return the path to where it has been downloaded.
-// TODO better error handling
+// TODO better error handling (does not care if download fails)
 func execInstaLoader(postId string) (string, error) {
 	p := filepath.Join(dlPath, postId)
 

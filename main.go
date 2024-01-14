@@ -111,10 +111,10 @@ func dirToPost(dir string) Post {
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("index.tmpl.html")
-	if err != nil {
-		log.Fatal(err)
-	}
+	var err error
+
+	// get template from embed
+	t := template.Must(template.ParseFS(indexTmplFS, "index.tmpl.html"))
 
 	// get DATA here
 	idsParam := r.FormValue("ids")
