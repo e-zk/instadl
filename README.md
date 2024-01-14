@@ -29,11 +29,11 @@ Install
 Running
 -------
 
-	usage: instadl [-d directory] [-s path] [-l listen_addr]
+	usage:	instadl [-d directory] [-s path] [-l listen_addr]
 	where:
 		-d	local path to /static directory (defaults to ./static). this is where
-		 	posts are saved.
-		-s	local path to style.css (defaults to /style.css in the directory
+			posts are saved.
+		-s	local path to style.css (defaults to /style.css in directory
 			specified by -d).
 		-l	listen address (defaults to "0.0.0.0:8585").
 
