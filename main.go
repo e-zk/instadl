@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"embed"
 	"flag"
 	"html/template"
 	"io"
@@ -14,6 +15,9 @@ import (
 	"slices"
 	"strings"
 )
+
+//go:embed index.tmpl.html
+var indexTmplFS embed.FS
 
 type PostMedia struct {
 	Type       string // image | video
@@ -34,6 +38,7 @@ type Data struct {
 	Ids     string
 }
 
+// replace file extension with a new one
 func replaceExt(path, newExt string) string {
 	newPath, _ := strings.CutSuffix(path, filepath.Ext(path))
 	newPath = newPath + newExt
