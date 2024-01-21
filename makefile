@@ -1,0 +1,3 @@
+all: instadl
+instadl: main.go instaloader.go
+	go build -o instadl ./...
