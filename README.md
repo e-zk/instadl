@@ -1,9 +1,10 @@
 instadl
 =======
 
+Bulk view and download Instagram posts.
+
 ![screenshot](scrot.png)
 
-Bulk download Instagram posts.
 
 (anti)Features
 --------------
