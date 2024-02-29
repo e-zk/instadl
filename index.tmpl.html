@@ -12,14 +12,14 @@
 	<p>input post urls or post IDs in the box below and hit submit.</p>
 	<form action="/getpost" method="post">
 		<textarea name="postlink"></textarea><br>
-		<input type="submit" value="Submit">
+		<input type="submit" value="submit">
 	</form>
 	{{ if .Results }}
 	<hr>
-	<p>IDs: <code>{{.Ids}}</code></p>
+	<p>ids: <code>{{.Ids}}</code></p>
 	<form action="/getzip">
 		<input type="hidden" name="ids" value="{{.Ids}}">
-		<input type="submit" value="Download all">
+		<input type="submit" value="download all">
 	</form>
 	<div class="results">
 		{{ range $r := .Results }}
